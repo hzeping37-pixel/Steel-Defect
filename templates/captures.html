@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>检测记录 - 钢材缺陷检测系统</title>
+    
+    <!-- 主样式 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    
+    <!-- Chart.js 图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <meta name="robots" content="noindex,nofollow">
+    
+    <!-- 检测记录页面样式 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='captures.css') }}" />
+    
+    <script src="{{ url_for('static', filename='captures.js') }}"></script>
+</head>
+<body>
+    <div class="app">
+        <!-- 顶部导航 -->
+        <header class="app-header">
+        <div class="brand">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L20 6L32 12V28L20 34L8 28V12Z" fill="currentColor" opacity="0.9"/>
+                    <path d="M8 12L20 18L32 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M20 18V34" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M8 12V28L20 34" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M32 12V28L20 34" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="12" y1="15" x2="12" y2="25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+                    <line x1="28" y1="15" x2="28" y2="25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+                </svg>
+            </div>
+            <div class="title">
+                <h1>钢材缺陷检测系统</h1>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="folder-btn active" title="检测记录">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+            </button>
+            <button class="settings-btn" title="设置">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+        <!-- 高斯模糊遮罩 -->
+        <div class="blur-overlay"></div>
+        
+        <!-- 两栏布局 -->
+        <main class="main two-column-layout" style="flex: 1; display: grid; grid-template-columns: 1fr 340px; gap: var(--spacing-lg); overflow: hidden;">
+            <!-- 中间面板：检测记录 -->
+            <section class="center-panel" style="display: flex; flex-direction: column; overflow: hidden; min-height: 0;">
+                <div class="card" style="padding: var(--spacing-md); flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0;">
+            <div class="page-header" style="background: transparent; box-shadow: none; padding: 0; margin-bottom: var(--spacing-md); flex-shrink: 0;">
+                <h1>检测记录</h1>
+                
+                <div class="toolbar">
+                    <div class="filter-group">
+                        <label>开始时间</label>
+                        <input id="start" class="input" type="datetime-local" onchange="onFilter()" />
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>结束时间</label>
+                        <input id="end" class="input" type="datetime-local" onchange="onFilter()" />
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>筛选</label>
+                        <div class="custom-select-wrapper" id="cls-wrapper">
+                            <div class="custom-select" id="cls-select">
+                                <div class="custom-select-trigger" id="cls-trigger">
+                                    <span>全部</span>
+                                    <svg class="custom-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="custom-select-options" id="cls-options">
+                                    <div class="custom-select-options-inner">
+                                        <div class="custom-option active" data-value="all">全部</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 隐藏的原始select，用于保持兼容性 -->
+                            <select id="cls" class="select" onchange="onFilter()" style="display:none;">
+                                <option value="all">全部</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>筛选类型</label>
+                        <div class="custom-select-wrapper" id="filter-type-wrapper">
+                            <div class="custom-select" id="filter-type-select">
+                                <div class="custom-select-trigger" id="filter-type-trigger">
+                                    <span>缺陷类型</span>
+                                    <svg class="custom-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="custom-select-options" id="filter-type-options">
+                                    <div class="custom-select-options-inner">
+                                        <div class="custom-option active" data-value="defect_type">缺陷类型</div>
+                                        <div class="custom-option" data-value="confidence">置信度区间</div>
+                                        <div class="custom-option" data-value="defect_count">缺陷个数</div>
+                                        <div class="custom-option" data-value="source_type">导入类型</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 隐藏的原始select，用于保持兼容性 -->
+                            <select id="filter_type" class="select" style="display:none;">
+                                <option value="defect_type">缺陷类型</option>
+                                <option value="confidence">置信度区间</option>
+                                <option value="defect_count">缺陷个数</option>
+                                <option value="source_type">导入类型</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button class="btn" onclick="resetFilters()">重置</button>
+                    <button class="btn" id="selectBtn" onclick="toggleSelectionMode()">选择</button>
+                </div>
+            </div>
+            
+            <div id="grid" class="grid" style="flex: 1;"></div>
+            
+            <!-- 分页控件 -->
+            <div id="pagination" class="pagination"></div>
+                </div>
+            </section>
+            
+            <!-- 右侧栏 -->
+            <aside class="right-sidebar">
+                <div class="sidebar-content">
+                    <!-- 缺陷占比卡片 -->
+                    <div class="panel">
+                        <div class="card-title">缺陷占比</div>
+                        <div class="panel-content">
+                            <!-- 圆环图和缺陷占比 -->
+                            <div class="defect-chart-container">
+                                <canvas id="defectDoughnutChart" width="200" height="200"></canvas>
+                                <div class="defect-legend" id="defectLegend">
+                                    <!-- 动态生成图例 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 最近统计卡片 -->
+                    <div class="panel">
+                        <div class="card-title">最近统计</div>
+                        <div class="panel-content">
+                            <!-- 柱状图：x轴日期，y轴图片数量 -->
+                            <div class="recent-stats-chart-container">
+                                <canvas id="recentStatsBarChart" width="300" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 损伤占比卡片 -->
+                    <div class="panel">
+                        <div class="card-title">损伤占比</div>
+                        <div class="panel-content">
+                            <div id="damageRatioContent">
+                                <div class="placeholder-text">加载中...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 置信分布卡片 -->
+                    <div class="panel">
+                        <div class="card-title">置信分布</div>
+                        <div class="panel-content">
+                            <div class="confidence-chart-container">
+                                <canvas id="confidenceBarChart" width="300" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- AI分析卡片 -->
+                    <div class="panel">
+                        <div class="ai-analysis-header">
+                            <div class="ai-analysis-title">AI分析</div>
+                            <div class="ai-analysis-switch" id="aiAnalysisSwitch" onclick="toggleAIAnalysis();" title="开启/关闭AI分析">
+                                <div class="switch-track">
+                                    <div class="switch-thumb"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel-content">
+                            <div id="aiAnalysisContent" style="display: none;">
+                                <div id="aiAnalysisLoading" class="loading-small" style="display: none;">
+                                    <div class="spinner-small"></div>
+                                    <div>正在分析...</div>
+                                </div>
+                                <div id="aiAnalysisResult" class="ai-analysis-result"></div>
+                            </div>
+                            <div id="aiAnalysisPlaceholder" class="placeholder-text">
+                                开启AI分析获取智能建议
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+    
+    <!-- 底部胶囊操作栏 -->
+    <div id="batchBar" class="batch-bar"></div>
+    
+    <!-- 图片查看模态框 -->
+    <div id="imageModal" class="modal" onclick="closeModalOnBackground(event)">
+        <div class="modal-content">
+            <div class="modal-image-wrapper"><img id="modalImage" src="" alt="" /></div>
+            <div id="modalInfo" class="modal-info"></div>
+        </div>
+    </div>
+    
+    <!-- 提示弹窗（替代浏览器alert） -->
+    <div id="alertModal" class="modal" onclick="closeAlertModal(event)">
+        <div class="confirm-modal-content">
+            <div class="confirm-title" id="alertTitle">提示</div>
+            <div class="confirm-message">
+                <span id="alertMessageText"></span>
+            </div>
+            <div class="confirm-buttons">
+                <button class="confirm-btn confirm-delete-btn" onclick="closeAlertModal()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认弹窗 -->
+    <div id="deleteConfirmModal" class="modal" onclick="handleDeleteModalClick(event)">
+        <div class="confirm-modal-content">
+            <div class="confirm-title">删除警告</div>
+            <div class="confirm-message">
+                <span id="deleteMessageText">确定要删除选中的 0 个批次吗？</span>
+            </div>
+            <div class="confirm-buttons">
+                <button class="confirm-btn cancel-btn" onclick="closeDeleteConfirm()">取消</button>
+                <button class="confirm-btn confirm-delete-btn" onclick="confirmDelete()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置面板 -->
+    <div class="settings-overlay" id="settingsOverlay"></div>
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-title">显示设置</div>
+        <div class="settings-card">
+            <!-- 动画效果 -->
+            <div class="setting-item">
+                <div class="setting-label">
+                    <div class="setting-title">动画程序</div>
+                    <div class="setting-description">点击组件时添加动画效果</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="animationToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            
+            <!-- 高对比度文字 -->
+            <div class="setting-item">
+                <div class="setting-label">
+                    <div class="setting-title">高对比度文字</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="highContrastToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            
+            <!-- 高斯模糊 -->
+            <div class="setting-item">
+                <div class="setting-label">
+                    <div class="setting-title">高斯模糊</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="blurToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+    
+    </div>
+</body>
+</html>

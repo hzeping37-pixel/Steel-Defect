@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>图片检测 - 钢材缺陷检测系统</title>
+    
+    <!-- 主样式 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    
+    <meta name="robots" content="noindex,nofollow">
+</head>
+<body>
+    <div class="app">
+        <!-- 顶部导航 -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="logo">📷</div>
+                <div class="title">
+                    <h1>图片缺陷检测</h1>
+                    <p class="muted">上传图片 · 智能分析 · 精准标注</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- 导航栏 -->
+        <div class="nav-header">
+            <a href="/" class="back-link">← 返回首页</a>
+        </div>
+
+        <div class="detect-container">
+            <!-- 左侧面板:上传/图片显示 -->
+            <section class="upload-panel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3 style="margin: 0;">📤 上传图片</h3>
+                    <button id="detectBtn" class="btn primary" hidden>🔍 开始检测</button>
+                </div>
+                <p class="muted" style="margin-bottom: 12px;">支持 JPG、PNG、BMP 格式</p>
+
+                <!-- 模型切换 -->
+                <div style="margin-bottom: 16px; padding: 12px; background: var(--bg-elevated); border-radius: var(--radius-md); border: 1px solid var(--border);">
+                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label class="label-inline" style="display: block; margin-bottom: 4px;">
+                                <span>选择模型</span>
+                            </label>
+                            <select id="modelSelect" class="select" style="width: 100%;">
+                                <option value="yolo">YOLO 模型</option>
+                                <option value="unet">UNet 模型</option>
+                                <option value="custom">自定义模型路径</option>
+                            </select>
+                        </div>
+                        <button id="applyModelBtn" class="btn primary" style="margin-top: 20px;">✅ 应用模型</button>
+                    </div>
+                    <div id="modelInfo" style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">
+                        当前模型：YOLO 模型
+                    </div>
+                    <div id="customModelPathContainer" style="margin-top: 8px; display: none;">
+                        <input type="text" id="customModelPath" placeholder="请输入模型完整路径" style="width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px;" />
+                    </div>
+                </div>
+
+                <!-- 上传区域 -->
+                <div class="upload-zone" id="uploadZone">
+                    <div style="font-size: 48px; color: var(--text-muted); margin-bottom: 8px;">📁</div>
+                    <div style="font-size: 14px; color: var(--text-secondary);">点击或拖拽图片到此处</div>
+                    <div class="muted" style="margin-top: 4px;">JPG / PNG / BMP</div>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" multiple style="display: none" />
+                
+                <!-- 图片显示区域(原图+标注图+热力图并排) -->
+                <div class="images-container" id="imagesContainer" hidden>
+                    <button class="nav-arrow prev-arrow" id="prevImageBtn" hidden>&lt;</button>
+                    <div class="image-wrapper">
+                        <button class="clear-image-btn" id="clearImageBtn" title="清除图片，重新上传">×</button>
+                        <img id="originalImageDisplay" alt="原图" />
+                        <div class="image-label" id="imageLabel">原图</div>
+                    </div>
+                    <div class="image-wrapper" id="annotatedImageWrapper" hidden>
+                        <img id="annotatedImageDisplay" alt="标注图" />
+                        <div class="image-label">标注图</div>
+                    </div>
+                    <div class="image-wrapper" id="heatmapImageWrapper" hidden>
+                        <img id="heatmapImageDisplay" alt="热力图" />
+                        <div class="image-label">热力图</div>
+                    </div>
+                    <button class="nav-arrow next-arrow" id="nextImageBtn" hidden>&gt;</button>
+                </div>
+
+                <!-- 进度条 -->
+                <div class="progress-container" id="progressContainer" hidden>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">准备中...</div>
+                </div>
+
+                <!-- 检测数据表格 -->
+                <div id="detectionDataSection" class="detection-data-section" hidden>
+                    <h4 style="margin: 16px 0 12px 0; color: var(--primary); font-size: 15px;">📋 检测数据</h4>
+                    <div id="resultContent"></div>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <div style="margin-top: 8px; color: var(--text-muted);">检测中，请稍候...</div>
+                </div>
+
+                <div id="statusText" class="status-text" hidden></div>
+            </section>
+
+            <!-- 右侧面板:AI分析报告 -->
+            <section class="result-panel">
+                <h3>🤖 AI分析报告</h3>
+                
+                <!-- AI分析按钮 -->
+                <div id="aiAnalysisSection" class="ai-analysis-section" hidden>
+                    <button id="analyzeWithLLMBtn" class="btn primary">
+                        🤖 开始AI分析
+                    </button>
+                    <div id="llmStatusIndicator" class="llm-status-indicator"></div>
+                </div>
+                
+                <!-- AI分析结果 -->
+                <div id="aiAnalysisResult" class="ai-analysis-result" style="display: none;">
+                    <div class="ai-result-header">
+                        <h4>📊 分析结果</h4>
+                        <button id="closeAIResult" class="close-btn">×</button>
+                    </div>
+                    <div id="aiAnalysisLoading" class="ai-loading" hidden>
+                        <div class="spinner"></div>
+                        <div>正在调用AI进行分析，请稍候...</div>
+                    </div>
+                    <div id="aiAnalysisContent" class="ai-content"></div>
+                </div>
+                
+                <div id="emptyState" class="empty-state">
+                    <div style="text-align: center; padding: 60px 0; color: var(--text-muted);">
+                        <div style="font-size: 48px; margin-bottom: 12px;">🤖</div>
+                        <div>上传图片并检测后可进行AI智能分析</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <footer class="footer">
+            钢材缺陷检测系统 · YOLO 目标检测 + UNet 语义分割
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='detect.js') }}"></script>
+</body>
+</html>
