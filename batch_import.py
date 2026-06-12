@@ -21,7 +21,7 @@ from services.record_service import RecordService
 # 配置
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKEND_DIR = os.path.join(BASE_DIR, 'backend')
-IMAGES_DIR = r"D:\Users\12404\Documents\钢材检测系统\flask-system-status - 副本\IMAGES"
+IMAGES_DIR = os.environ.get("STEEL_DEFECT_IMAGES_DIR", os.path.join(BASE_DIR, "IMAGES"))
 MODEL_PATH = os.path.join(BACKEND_DIR, "best (1).pt")
 RECORDS_PATH = os.path.join(BACKEND_DIR, "records.json")
 CAPTURE_DIR = os.path.join(BACKEND_DIR, "captures")
